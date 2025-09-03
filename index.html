@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Anosu API 图片展示</title>
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            text-align: center;
+        }
+        #imageContainer {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #eee;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #imageContainer img {
+            max-width: 100%;
+            max-height: 400px;
+            display: none;
+        }
+        #loading {
+            display: none;
+            color: #666;
+        }
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Anosu 随机图片调用</h1>
+        <div>
+            <input type="text" id="keyword" placeholder="输入关键词（可选）" />
+            <button onclick="getImage()">获取图片</button>
+        </div>
+        <div id="loading">加载中...</div>
+        <div id="imageContainer">
+            <img id="resultImage" alt="API返回图片" />
+            <div id="emptyTip">点击按钮获取图片</div>
+        </div>
+        <div id="errorMsg" style="color: red; display: none;"></div>
+    </div>
+
+    <script>
+        // 替换为你的Cloudflare Worker域名（后端代理地址）
+        const PROXY_URL = "https://aenews.dpdns.org";
+
+        async function getImage() {
+            const keyword = document.getElementById("keyword").value.trim();
+            const loading = document.getElementById("loading");
+            const image = document.getElementById("resultImage");
+            const emptyTip = document.getElementById("emptyTip");
+            const errorMsg = document.getElementById("errorMsg");
+
+            // 显示加载状态，隐藏其他内容
+            loading.style.display = "block";
+            image.style.display = "none";
+            emptyTip.style.display = "none";
+            errorMsg.style.display = "none";
+
+            try {
+                // 调用Cloudflare代理接口
+                const response = await fetch(`${PROXY_URL}${keyword ? `?keyword=${encodeURIComponent(keyword)}` : ""}`, {
+                    method: "GET",
+                    headers: { "Content-Type": "image/*" }
+                });
+
+                if (!response.ok) throw new Error(`请求失败：${response.status}`);
+                // 转换为Blob并显示图片
+                const blob = await response.blob();
+                const imageUrl = URL.createObjectURL(blob);
+                image.src = imageUrl;
+                image.style.display = "block";
+
+            } catch (err) {
+                errorMsg.textContent = `获取失败：${err.message}`;
+                errorMsg.style.display = "block";
+            } finally {
+                loading.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
